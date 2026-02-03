@@ -44,75 +44,43 @@
 ## 快速开始
 1. 下载docker、ollama
 ```bash
-具体的网上都有部署教程
+具体的网上有部署教程https://ragflow.com.cn/docs/deploy_local_llm
 ```
 
 2. 下载模型（可选）
 <img width="1911" height="913" alt="image" src="https://github.com/user-attachments/assets/97e8da0d-a8d9-46a0-850f-d3121105b5c4" />
 
 ```bash
-#下载需要的模型
-# 将模型文件放置在 models/ 目录下（例如 Qwen3-VL:4B, DeepSeek-R1:8B）
+下载需要的模型
+将模型文件放置在 models/ 目录下（例如 Qwen3-VL:4B, DeepSeek-R1:8B）
+我的仓库有给出这两个模型，也可以自己下载
 ```
 
-3. 配置环境
+3. 配置环境打开ragflow
 ```bash
-cp .env.example .env
+运行docker
 ```
-编辑 `.env`：
-```env
-# Ollama 配置
-OLLAMA_HOST=0.0.0.0
-OLLAMA_NUM_PARALLEL=2
-OLLAMA_MODELS_PATH=/root/.ollama/models
+<img width="1919" height="1022" alt="33db130cc80ddb8509ac3989253d7658" src="https://github.com/user-attachments/assets/b0373b03-2aea-4bc1-ac33-a641e653a29e" />
 
-# RAGflow 配置
-RAGFLOW_PORT=9380
-RAGFLOW_WORKERS=4
-RAGFLOW_API_KEY=your_api_key_here
-
-# 模型配置
-MODEL_QWEN=qwen3-vl:4b
-MODEL_DEEPSEEK=deepseek-r1:8b
-EMBEDDING_MODEL=all-minilm
-
-# 系统资源限制
-MEMORY_LIMIT=16g
-CPU_LIMIT=8
-```
-
-4. 启动服务
 ```bash
-docker-compose up -d
+注册登录
 ```
 
-5. 验证服务状态
-```bash
-# 查看容器与日志
-docker-compose ps
-docker-compose logs -f ollama
-docker-compose logs -f ragflow
-```
-
-6. 访问服务
-- RAGflow Web UI: http://localhost:9380
-- Ollama API: http://localhost:11434
-- API 文档: http://localhost:9380/api/docs
+<img width="1919" height="961" alt="a23c62438a6491abe720619e9186471f" src="https://github.com/user-attachments/assets/35652de2-9e17-4f74-b4d7-3907737e4850" />
 
 ---
 
 ## 模型管理
-### 拉取模型
+### 模型配置chat与embedding
 ```bash
-# 通过 Ollama 拉取模型
-docker exec -it ollama ollama pull qwen2.5-vl:4b
-docker exec -it ollama ollama pull deepseek-r1:8b
-# 查看已安装模型
-docker exec -it ollama ollama list
+注意这里的Url是本地ip地址：11434
+还得去本机控制页面设置一下环境变量
 ```
+<img width="1834" height="892" alt="692ec04354d88c9311706009943b24b7" src="https://github.com/user-attachments/assets/dd3a48d0-9eb4-42ee-bc17-8699f0cdb931" />
 
-### 模型切换
+```bash
 在 RAGflow 界面：进入设置 → 模型配置 → 从下拉菜单选择目标模型。
+```
 <img width="1848" height="953" alt="27db303f5e686af3076f906c368be2b2" src="https://github.com/user-attachments/assets/198e413e-110c-4c9c-8447-8102026bea7f" />
 
 ---
