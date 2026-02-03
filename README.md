@@ -72,7 +72,7 @@ RAGFLOW_WORKERS=4
 RAGFLOW_API_KEY=your_api_key_here
 
 # 模型配置
-MODEL_QWEN=qwen2.5-vl:4b
+MODEL_QWEN=qwen3-vl:4b
 MODEL_DEEPSEEK=deepseek-r1:8b
 EMBEDDING_MODEL=all-minilm
 
