@@ -124,53 +124,123 @@ docker exec -it ollama ollama list
 
 2. 上传文档（支持）
 - PDF、Word (.doc/.docx)、Excel、PowerPoint、纯文本 (.txt)、网页 (.html)、电子书 (.epub)
+- <img width="1919" height="920" alt="6970e5f48f4d5f016a0d6aca745e7772" src="https://github.com/user-attachments/assets/c6fc1cd3-fcfd-4edb-8bbf-851352510cac" />
+
+
+
+  
 
 
 3. 文档处理（RAGflow 自动）
 - 解析文档 → 文本分割 → 生成嵌入 → 建立向量索引
-
----
-## UI界面
-1. 创建html文件
-
-2. 将iframe嵌入网站处于所需位置
-<img width="1919" height="923" alt="image" src="https://github.com/user-attachments/assets/d040ea9e-8a9d-4e0f-a786-81d1df65ed86" />
-
-3. 运行html文件
-<img width="1917" height="922" alt="823f9bc1e276c50ae22ae854c3971704" src="https://github.com/user-attachments/assets/51eb75ea-2703-4325-a684-423290cac02b" />
+- <img width="1919" height="918" alt="b750475ff09740e37c8f81d83002ef41" src="https://github.com/user-attachments/assets/45542006-74f8-4c69-aa25-f48190961f88" />
 
 
 ---
+
 ## 使用指南
 ### 基础问答
 - 访问 RAGflow Web UI，选择目标知识库，输入问题，系统将检索并生成答案。
+- <img width="1919" height="917" alt="80ee5992529d8eeb4b5ccbb1aaa01d3f" src="https://github.com/user-attachments/assets/ac6adcd7-6223-4af5-830f-5242d650c704" />
+
 
 ### 多模态对话（Qwen3-VL）
 - 上传图片或含图文档，输入与视觉内容相关的问题，模型将结合图像与文本回答。
+- <img width="1919" height="955" alt="808ad581a1792c446cbae5ac9c8fd6c1" src="https://github.com/user-attachments/assets/4031967b-ffe6-496f-914e-b86d5eda5fc8" />
+
 
 ---
 
 ## API 使用示例
 ```python
+'''
+所需配置：
+1.将BASE_URL替换为自己部署ragflow服务器（或者自己电脑localhost）的ip:port
+2.将API_KEY的api key替换为自己在ragflow中生成的api key
+3.run it
+'''
+import json
 import requests
+BASE_URL ='http://192.168.0.109/v1/'#http://localhost,/v1/api/
+API_KEY = 'ragflow-I1NmRiYThjZmU0ZjExZjA5MGI0MDI0Mm'
 
-API_KEY = "your_api_key_here"
+def start_conversation():
+    url = BASE_URL + 'api/new_conversation'
+    headers = {"Content-Type": "application/json",
+                    'Authorization': 'Bearer ' + API_KEY}
+    response = requests.get(url, headers=headers)
+    conversation_id = None
+    msg = None
+    if response.status_code == 200:
+        content = response.json()
+        conversation_id = content['data']['id']
+        msg = content['data']['message']  # content role
+        print("start_conversation:", conversation_id, msg)
+    else:
+        print(f"Request failed with status code: {response.status_code}")
+    return response.status_code, conversation_id, msg
 
-def ask_question(question, knowledge_base_id):
-    url = "http://localhost:9380/api/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    data = {
-        "model": "qwen2.5-vl:4b",
-        "messages": [{"role": "user", "content": question}],
-        "knowledge_base_id": knowledge_base_id,
-        "stream": False
+
+def get_answer(conversation_id, msg, quote=False, stream=True):
+    url = BASE_URL + 'api/completion'
+    params = {
+        "conversation_id": conversation_id,  # 替代为你自己的对话ID
+        "messages": [{"role": "user", "content": msg}],  # 替代为你的消息内容
+        "quote": False,
+        "stream": False,
     }
-    response = requests.post(url, json=data, headers=headers)
-    return response.json()
+    print(params)
+    headers_json = {"Content-Type": "application/json",
+                    'Authorization': 'Bearer ' + API_KEY}
 
-# 使用示例
-answer = ask_question("什么是机器学习？", "kb_123")
-print(answer["choices"][0]["message"]["content"])
+    try:
+        response = requests.post(url=url, headers=headers_json, data=json.dumps(params))
+        print(response.json())
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+        return response.status_code, None, None
+    except Exception as err:
+        print(f"An error occurred: {err}")
+        return None, None, None
+
+    try:
+        content = response.json()
+        data = content.get('data', None)
+        retcode = content.get('retcode', None)
+        retmsg = content.get('retmsg', None)
+        if data:
+            answer = data.get('answer', None)
+        else:
+            answer = None
+    except ValueError:
+        print("Failed to parse JSON response")
+        return response.status_code, None, None
+
+    return response.status_code, answer, retmsg
+
+
+def chat():
+    status_code, conversation_id, msg = start_conversation()
+    # conversation_id = input("Enter conversation ID: ")
+    print("Chatbot initialized. Type 'exit' to end the conversation.")
+
+    while True:
+        user_message = input("You: ")
+        if user_message.lower() == 'exit':
+            print("Ending the conversation.")
+            break
+        status_code, answer, retmsg = get_answer(conversation_id, user_message)
+        if status_code is not None and status_code == 200 and answer:
+            print(f"Chatbot: {answer}")
+        elif retmsg:
+            print(f"Failed to get a response from the chatbot. Error message: {retmsg}")
+        else:
+            print("Failed to get a response from the chatbot.")
+
+
+if __name__ == "__main__":
+    chat()
 ```
 
 ---
@@ -213,7 +283,17 @@ services:
 ```
 
 ---
+## UI界面
+1. 创建html文件
 
+2. 将iframe嵌入网站处于所需位置
+<img width="1919" height="923" alt="image" src="https://github.com/user-attachments/assets/d040ea9e-8a9d-4e0f-a786-81d1df65ed86" />
+
+3. 运行html文件
+<img width="1917" height="922" alt="823f9bc1e276c50ae22ae854c3971704" src="https://github.com/user-attachments/assets/51eb75ea-2703-4325-a684-423290cac02b" />
+
+
+---
 ## 性能调优
 - 内存优化：调整 Docker 内存限制、减少并发处理数量、使用量化模型版本
 - 存储优化：使用 SSD 加速向量检索，定期清理临时文件，压缩历史对话
