@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 对话助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .chat-container {
+            padding: 30px;
+        }
+        
+        .iframe-wrapper {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+            position: relative;
+            min-height: 700px;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .control-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f2f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-secondary:hover {
+            background: #e4e6e9;
+            transform: translateY(-1px);
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .error {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: #ffebee;
+            color: #c62828;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .instructions {
+            margin-top: 25px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .instructions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            padding-left: 24px;
+            position: relative;
+            line-height: 1.5;
+        }
+        
+        .instructions li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .chat-container {
+                padding: 15px;
+            }
+            
+            .iframe-wrapper {
+                min-height: 500px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-group {
+                width: 100%;
+            }
+            
+            .buttons {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .iframe-wrapper {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 智能对话助手</h1>
+            <p>基于 RAGFlow 的知识增强对话系统，为您提供专业的智能问答服务</p>
+        </div>
+        
+        <div class="chat-container">
+            <div class="iframe-wrapper" id="iframeWrapper">
+                <!-- 加载动画 -->
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载对话助手，请稍候...</p>
+                </div>
+                
+                <!-- iframe 嵌入 -->
+                <iframe
+                    id="chatFrame"
+                    src="http://127.0.0.1/chat/share?shared_id=a930188800e211f1bdfd0242ac120004&from=chat&auth=I1NmU3OGU2ZmU0ZjExZjA5MGI0MDI0Mm"
+                    style="width: 100%; height: 100%; min-height: 600px; border: none;"
+                    frameborder="0"
+                    allow="microphone; camera"
+                    title="AI 对话助手"
+                >
+                </iframe>
+            </div>
+            
+            <!-- 状态信息 -->
+            <div class="status" id="statusMessage">
+                <span id="statusText">连接正常，可以开始对话</span>
+            </div>
+            
+            <!-- 错误信息 -->
+            <div class="error" id="errorMessage">
+                <span id="errorText"></span>
+            </div>
+            
+            <!-- 控制面板 -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="frameHeight">框架高度 (px):</label>
+                    <input 
+                        type="number" 
+                        id="frameHeight" 
+                        value="700" 
+                        min="400" 
+                        max="1200"
+                        step="50"
+                    >
+                </div>
+                
+                <div class="control-group">
+                    <label for="frameWidth">框架宽度 (%):</label>
+                    <input 
+                        type="number" 
+                        id="frameWidth" 
+                        value="100" 
+                        min="50" 
+                        max="100"
+                        step="5"
+                    >
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn btn-primary" onclick="refreshChat()">
+                        🔄 刷新对话
+                    </button>
+                    <button class="btn btn-secondary" onclick="adjustSize()">
+                        📐 应用尺寸
+                    </button>
+                    <button class="btn btn-secondary" onclick="showInstructions()">
+                        ❓ 使用说明
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 使用说明 -->
+            <div class="instructions" id="instructions" style="display: none;">
+                <h3>使用指南</h3>
+                <ul>
+                    <li>在对话框中直接输入问题，AI 助手会即时回复</li>
+                    <li>支持多轮对话，上下文会自动保持</li>
+                    <li>可以询问技术问题、文档查询、代码示例等</li>
+                    <li>调整框架尺寸以获得最佳使用体验</li>
+                    <li>如需重新开始对话，请点击"刷新对话"按钮</li>
+                    <li>如遇连接问题，请检查网络连接后刷新页面</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 AI 对话助手 | 基于 RAGFlow 构建 | 技术支持</p>
+        </div>
+    </div>
+
+    <script>
+        // 获取 DOM 元素
+        const chatFrame = document.getElementById('chatFrame');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const statusText = document.getElementById('statusText');
+        const errorText = document.getElementById('errorText');
+        const instructions = document.getElementById('instructions');
+        const frameHeightInput = document.getElementById('frameHeight');
+        const frameWidthInput = document.getElementById('frameWidth');
+        const iframeWrapper = document.getElementById('iframeWrapper');
+        
+        // 初始配置
+        let isLoaded = false;
+        
+        // iframe 加载完成事件
+        chatFrame.onload = function() {
+            console.log('iframe 加载完成');
+            isLoaded = true;
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+                showStatus('对话助手已就绪，可以开始交流！');
+            }, 300);
+        };
+        
+        // iframe 加载错误事件
+        chatFrame.onerror = function() {
+            console.error('iframe 加载失败');
+            loadingOverlay.style.display = 'none';
+            showError('无法加载对话助手，请检查网络连接或服务状态');
+        };
+        
+        // 显示状态信息
+        function showStatus(message) {
+            statusText.textContent = message;
+            statusMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.style.display = 'block';
+            statusMessage.style.display = 'none';
+        }
+        
+        // 刷新对话
+        function refreshChat() {
+            if (confirm('确定要刷新对话吗？这将重置当前对话内容。')) {
+                showStatus('正在刷新对话...');
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.style.opacity = '1';
+                isLoaded = false;
+                
+                // 通过修改 src 强制刷新 iframe
+                const originalSrc = chatFrame.src;
+                chatFrame.src = '';
+                setTimeout(() => {
+                    chatFrame.src = originalSrc;
+                }, 100);
+            }
+        }
+        
+        // 调整框架尺寸
+        function adjustSize() {
+            const height = parseInt(frameHeightInput.value) || 700;
+            const width = parseInt(frameWidthInput.value) || 100;
+            
+            // 验证输入范围
+            if (height < 400 || height > 1200) {
+                showError('高度必须在 400px 到 1200px 之间');
+                return;
+            }
+            
+            if (width < 50 || width > 100) {
+                showError('宽度必须在 50% 到 100% 之间');
+                return;
+            }
+            
+            // 应用尺寸
+            iframeWrapper.style.minHeight = height + 'px';
+            chatFrame.style.minHeight = height + 'px';
+            chatFrame.style.width = width + '%';
+            
+            showStatus(`已调整尺寸：高度 ${height}px，宽度 ${width}%`);
+        }
+        
+        // 显示/隐藏使用说明
+        function showInstructions() {
+            if (instructions.style.display === 'none') {
+                instructions.style.display = 'block';
+                showStatus('显示使用说明');
+            } else {
+                instructions.style.display = 'none';
+                showStatus('隐藏使用说明');
+            }
+        }
+        
+        // 监听键盘快捷键
+        document.addEventListener('keydown', function(event) {
+            // Ctrl + R 刷新对话
+            if (event.ctrlKey && event.key === 'r') {
+                event.preventDefault();
+                refreshChat();
+            }
+            
+            // F1 显示帮助
+            if (event.key === 'F1') {
+                event.preventDefault();
+                showInstructions();
+            }
+        });
+        
+        // 初始显示状态
+        setTimeout(() => {
+            if (!isLoaded) {
+                showStatus('正在连接对话服务...');
+            }
+        }, 2000);
+        
+        // 监听窗口大小变化，自动调整 iframe
+        window.addEventListener('resize', function() {
+            if (isLoaded) {
+                // 确保 iframe 高度适应容器
+                const wrapperHeight = iframeWrapper.clientHeight;
+                chatFrame.style.height = wrapperHeight + 'px';
+            }
+        });
+        
+        // 初始化调整尺寸
+        window.onload = function() {
+            adjustSize();
+        };
+    </script>
+</body>
+</html>
